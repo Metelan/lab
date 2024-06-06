@@ -1,4 +1,4 @@
-﻿using System;
+﻿ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,15 +27,18 @@ namespace Lab2
                 return balance;
             }
         }
-
+        private readonly decimal _minimumBalance;
+        public BankAccount(string name, decimal initialBalance) : this(name, initialBalance, 0) { }
         //Конструктор для создания нового банковского счета.
-        public BankAccount(string name, decimal initialBalance) 
+        public BankAccount(string name, decimal initialBalance, decimal minimumBalance)
         {
             Number = s_accountNumberSeed.ToString(); //Присваиваем сид к новому аккаунту
             s_accountNumberSeed++; //Инкриментируем для изменение сида для следующего акаунта 
 
             Owner = name; //Присваиваем имя к новому аккаунту
-            MakeDeposit(initialBalance, DateTime.Now, "Initial balance"); //Записываем начальный баланс через метод MakeDeposit
+            _minimumBalance = minimumBalance;
+            if (initialBalance > 0)
+                MakeDeposit(initialBalance, DateTime.Now, "Initial balance"); //Записываем начальный баланс через метод MakeDeposit
 
         }
 
@@ -84,5 +87,6 @@ namespace Lab2
             var withdrawal = new Transaction(-amount, date, note);//Запись текущего списания в журнал транзакции
             _allTransactions.Add(withdrawal);
         }
+        public virtual void PerformMonthEndTransactions() { }
     }
 }

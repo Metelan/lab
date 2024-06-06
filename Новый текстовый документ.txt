@@ -1,0 +1,139 @@
+// Базовый класс BankAccount, который будет расширен другими классами.
+public class BankAccount
+{
+    public string Number { get; }
+    public string Owner { get; }
+    public decimal Balance 
+    {
+        get
+        {
+            decimal balance = 0;
+            foreach(var transaction in allTransactions)
+            {
+                balance += transaction.Amount;
+            }
+            return balance;
+        }
+    }
+
+    private static int accountNumberSeed = 1234567890;
+    private List<Transaction> allTransactions = new List<Transaction>();
+
+    public BankAccount(string name, decimal initialBalance) : this(name, initialBalance, 0) { }
+
+    public BankAccount(string name, decimal initialBalance, decimal minimumBalance)
+    {
+        this.Number = accountNumberSeed.ToString();
+        accountNumberSeed++;
+        this.Owner = name;
+        if (initialBalance > 0)
+            MakeDeposit(initialBalance, DateTime.Now, "Initial balance");
+    }
+
+    public void MakeDeposit(decimal amount, DateTime date, string note)
+    {
+        if (amount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), "Amount of deposit must be positive");
+        }
+        var deposit = new Transaction(amount, date, note);
+        allTransactions.Add(deposit);
+    }
+
+    public void MakeWithdrawal(decimal amount, DateTime date, string note)
+    {
+        if (amount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), "Amount of withdrawal must be positive");
+        }
+        if (Balance - amount < 0)
+        {
+            throw new InvalidOperationException("Not sufficient funds for this withdrawal");
+        }
+        var withdrawal = new Transaction(-amount, date, note);
+        allTransactions.Add(withdrawal);
+    }
+
+    public string GetAccountHistory()
+    {
+        var report = new StringBuilder();
+
+        // HEADER
+        report.AppendLine("Date\t\tAmount\tNote");
+        foreach (var transaction in allTransactions)
+        {
+            // ROWS
+            report.AppendLine($"{transaction.Date.ToShortDateString()}\t{transaction.Amount}\t{transaction.Notes}");
+        }
+
+        return report.ToString();
+    }
+
+    // Метод, который будет переопределен в производных классах.
+    public virtual void PerformMonthEndTransactions() { }
+}
+
+// Класс Transaction для отслеживания транзакций по счету.
+public class Transaction
+{
+    public decimal Amount { get; }
+    public DateTime Date { get; }
+    public string Notes { get; }
+
+    public Transaction(decimal amount, DateTime date, string note)
+    {
+        this.Amount = amount;
+        this.Date = date;
+        this.Notes = note;
+    }
+}
+
+// Производный класс для счета с начислением процентов.
+public class InterestEarningAccount : BankAccount
+{
+    public InterestEarningAccount(string name, decimal initialBalance) : base(name, initialBalance) { }
+
+    public override void PerformMonthEndTransactions()
+    {
+        if (Balance > 500m)
+        {
+            var interest = Balance * 0.05m;
+            MakeDeposit(interest, DateTime.Now, "apply monthly interest");
+        }
+    }
+}
+
+// Производный класс для кредитной линии.
+public class LineOfCreditAccount : BankAccount
+{
+    public LineOfCreditAccount(string name, decimal initialBalance, decimal creditLimit) : base(name, initialBalance, -creditLimit) { }
+
+    public override void PerformMonthEndTransactions()
+    {
+        if (Balance < 0)
+        {
+            // Начисление процентов за использование кредитной линии.
+            var interest = -Balance * 0.07m;
+            MakeWithdrawal(interest, DateTime.Now, "Charge monthly interest");
+        }
+    }
+}
+
+// Производный класс для подарочной карты.
+public class GiftCardAccount : BankAccount
+{
+    private decimal _monthlyDeposit = 0m;
+
+    public GiftCardAccount(string name, decimal initialBalance, decimal monthlyDeposit = 0) : base(name, initialBalance)
+    {
+        _monthlyDeposit = monthlyDeposit;
+    }
+
+    public override void PerformMonthEndTransactions()
+    {
+        if (_monthlyDeposit != 0)
+        {
+            MakeDeposit(_monthlyDeposit, DateTime.Now, "Add monthly deposit");
+        }
+    }
+}
